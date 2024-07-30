@@ -7,7 +7,7 @@ env.config({ path: "./.env" });
 connectDB();
 
 app.get("/", (req, res) => {
-  res.send("Hello World");
+  res.send("server is running");
 });
 
 app.listen(process.env.PORT, () => {

@@ -28,3 +28,14 @@ exports.createUser = async (req, res) => {
     successResponse(res, 500, error.message, {});
   }
 };
+
+exports.createMoment = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "moment added successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
