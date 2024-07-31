@@ -13,7 +13,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/api/images", (req, res) => {
   fs.readdir(path.join(__dirname, "uploads"), (err, files) => {
-    const images = files.filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file));
+    const images = files
+      .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file))
+      .map((file) => `${req.protocol}://${req.get("host")}/uploads/${file}`);
     res.json(images);
   });
 });
