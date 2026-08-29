@@ -35,7 +35,7 @@ function App() {
             callGetMe(pos.coords.latitude, pos.coords.longitude);
           },
           () => {},
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 },
+          { enableHighAccuracy: false, maximumAge: 0 },
         );
       }
 
@@ -133,7 +133,11 @@ function App() {
                 autoComplete="current-password"
               />
 
-              <button className="login-btn" type="submit" disabled={loading}>
+              <button
+                className="login-btn"
+                type="submit"
+                disabled={loading || !cred.email || !cred.password}
+              >
                 {loading ? "Logging in..." : "Log in"}
               </button>
             </form>
@@ -154,11 +158,7 @@ function App() {
             </button>
 
             <button className="create-btn">
-              <a
-                href="https://www.instagram.com/accounts/emailsignup"
-                rel="noopener noreferrer"
-                className="remove_link_rel"
-              >
+              <a href="/" rel="noopener noreferrer" className="remove_link_rel">
                 Create new account
               </a>
             </button>
@@ -201,7 +201,11 @@ function App() {
               autoComplete="current-password"
             />
 
-            <button className="login-btn" type="submit" disabled={loading}>
+            <button
+              className="login-btn"
+              type="submit"
+              disabled={loading || !cred.email || !cred.password}
+            >
               {loading ? "Logging in..." : "Log in"}
             </button>
           </form>
