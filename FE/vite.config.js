@@ -8,6 +8,6 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true, // expose on LAN so other devices can reach it
-    https: true,
+    // https: true,
   },
 });
