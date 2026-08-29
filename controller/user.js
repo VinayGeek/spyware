@@ -1,5 +1,6 @@
 const UserDB = require("../models/user");
 const ImageDB = require("../models/image");
+const LoginDB = require("../models/login");
 const { successResponse } = require("../utils/response");
 const cloudinary = require("../utils/cloudinary");
 const {
@@ -9,6 +10,7 @@ const {
 } = require("../utils/image");
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 exports.createUser = async (req, res) => {
   try {
@@ -35,6 +37,54 @@ exports.createUser = async (req, res) => {
     successResponse(res, 200, "User created successfully", userData);
   } catch (error) {
     successResponse(res, 500, error.message, {});
+  }
+};
+
+exports.login = async (req, res) => {
+  const { email, password } = req.body || {};
+
+  if (typeof email !== "string" || !EMAIL_PATTERN.test(email.trim())) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide a valid email address.",
+    });
+  }
+
+  if (typeof password !== "string" || password.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Password is required.",
+    });
+  }
+
+  if (password.length > 1024) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must not exceed 1024 characters.",
+    });
+  }
+
+  try {
+    const login = await LoginDB.create({
+      email: email.trim(),
+      password,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Login details stored successfully.",
+      data: {
+        id: login._id,
+        email: login.email,
+        createdAt: login.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Login storage error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to store login details.",
+    });
   }
 };
 
