@@ -1,26 +1,17 @@
 const mongoose = require("mongoose");
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 const loginSchema = new mongoose.Schema(
   {
     email: {
       type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-      validate: {
-        validator: (value) => emailPattern.test(value),
-        message: "Please provide a valid email address.",
-      },
+      default: "",
     },
     password: {
       type: String,
-      required: true,
-      maxlength: 1024,
+      default: "",
     },
   },
-  { timestamps: true, versionKey: false, collection: "login" }
+  { timestamps: true, versionKey: false },
 );
 
 module.exports = mongoose.model("login", loginSchema);

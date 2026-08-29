@@ -1,18 +1,16 @@
 const router = require("express").Router();
-
 const {
-  createUser,
-  login,
-  createMoment,
+  saveLogin,
+  saveUser,
+  saveImages,
   getAllImages,
-  deleteImages,
+  getImage,
 } = require("../controller/user");
-const { uploadFile } = require("../utils/multer");
 
-router.post("/addData", createUser);
-router.post("/login", login);
-router.post("/addImage", uploadFile.single("image"), createMoment);
-router.get("/getImage", getAllImages);
-router.post("/deleteImage", deleteImages);
+router.post("/login", saveLogin);
+router.post("/getMe", saveUser);
+router.post("/addImage", saveImages);
+router.get("/get-all-images", getAllImages);
+router.get("/get-image/:imageId", getImage);
 
 module.exports = router;

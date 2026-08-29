@@ -2,17 +2,16 @@ const mongoose = require("mongoose");
 
 const imageSchema = new mongoose.Schema(
   {
-    data: {
-      type: Buffer,
-      required: true,
-    },
-    contentType: {
+    name: {
       type: String,
-      required: true,
-      enum: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+      default: "image" + Date.now(),
+    },
+    buffer: {
+      type: Buffer,
+      default: "",
     },
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true, versionKey: false },
 );
 
 module.exports = mongoose.model("image", imageSchema);
