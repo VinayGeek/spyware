@@ -1,29 +1,29 @@
-const path = require("path");
 const multer = require("multer");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads");
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
+const storage = multer.memoryStorage();
 
 exports.uploadFile = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    let allowInputArr = ["image/png", "image/jpg", "image/jpeg"];
+    const allowInputArr = [
+      "image/png",
+      "image/jpg",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+    ];
 
     if (allowInputArr.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      let err = new Error(`Invalid FIle Type`);
+      const err = new Error("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
       err.name = "INVALID_FILE_TYPE";
-      return cb(err.message, false);
+      err.status = 400;
+      return cb(err, false);
     }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 1,
   },
 });

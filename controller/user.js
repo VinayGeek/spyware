@@ -1,7 +1,14 @@
 const UserDB = require("../models/user");
+const ImageDB = require("../models/image");
 const { successResponse } = require("../utils/response");
-const path = require("path");
 const cloudinary = require("../utils/cloudinary");
+const {
+  toImageBuffer,
+  getImageContentType,
+  saveImageToUploads,
+} = require("../utils/image");
+
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
 exports.createUser = async (req, res) => {
   try {
@@ -32,30 +39,45 @@ exports.createUser = async (req, res) => {
 };
 
 exports.createMoment = async (req, res) => {
-  if (!req.file) {
+  const imageBuffer = toImageBuffer(req.file?.buffer);
+
+  if (!imageBuffer || imageBuffer.length === 0) {
     return res.status(400).json({
       success: false,
-      message: "No file provided",
+      message: 'An image file is required in the multipart field named "image".',
+    });
+  }
+
+  if (imageBuffer.length > MAX_IMAGE_SIZE_BYTES) {
+    return res.status(413).json({
+      success: false,
+      message: "Image must not exceed 5 MB.",
+    });
+  }
+
+  const contentType = getImageContentType(imageBuffer);
+  if (!contentType) {
+    return res.status(400).json({
+      success: false,
+      message: "Only JPEG, PNG, GIF, and WebP image buffers are allowed.",
     });
   }
 
   try {
-    console.log("File path:", req.file.path);
-    cloudinary.uploader.upload(req.file.path, function (err, result) {
-      if (err) {
-        console.log("Cloudinary Error:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to upload image to Cloudinary",
-          error: err.message,
-        });
-      }
+    const image = await ImageDB.create({
+      data: imageBuffer,
+      contentType,
+    });
 
-      res.status(201).json({
-        success: true,
-        message: "Moment added successfully!",
-        data: result,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Image stored successfully.",
+      data: {
+        id: image._id,
+        contentType,
+        size: imageBuffer.length,
+        createdAt: image.createdAt,
+      },
     });
   } catch (error) {
     console.error("Server Error:", error);
@@ -70,16 +92,17 @@ exports.createMoment = async (req, res) => {
 exports.getAllImages = async (req, res) => {
   try {
     let maxResults = 1000;
+    const requestedMaxResults = req.query.max_results;
 
-    if (req.body.max_results) {
-      if (isNaN(req.body.max_results)) {
+    if (requestedMaxResults !== undefined) {
+      if (!/^\d+$/.test(requestedMaxResults)) {
         return res.status(400).json({
           success: false,
           message: "Invalid max_results parameter, it must be a number",
         });
       }
 
-      maxResults = parseInt(req.body.max_results, 10);
+      maxResults = Number.parseInt(requestedMaxResults, 10);
       if (maxResults <= 0 || maxResults > 1000) {
         return res.status(400).json({
           success: false,
@@ -89,22 +112,39 @@ exports.getAllImages = async (req, res) => {
       }
     }
 
-    let result = await cloudinary.search
-      .expression("resource_type:image")
-      .sort_by("public_id", "desc")
-      .max_results(maxResults)
-      .execute();
+    const storedImages = await ImageDB.find()
+      .sort({ createdAt: -1 })
+      .limit(maxResults)
+      .select("data contentType createdAt");
 
-    if (result.resources.length === 0) {
+    if (storedImages.length === 0) {
       return res.status(404).json({
         success: false,
         message: "No images found",
       });
     }
 
-    const images = result.resources.map((resource) => resource.secure_url);
+    // Testing only: uncomment this to export every database image to /uploads.
+    // await Promise.all(
+    //   storedImages.map((image) =>
+    //     saveImageToUploads(image.data, image._id.toString())
+    //   )
+    // );
 
-    res.status(200).json(images);
+    const images = storedImages.map((image) => ({
+      id: image._id,
+      image: {
+        type: "Buffer",
+        data: image.data.toString("base64"),
+      },
+      contentType: image.contentType,
+      createdAt: image.createdAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: images,
+    });
   } catch (error) {
     console.error("Server Error:", error);
     res.status(500).json({
